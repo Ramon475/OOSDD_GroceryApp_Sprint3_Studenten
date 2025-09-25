@@ -18,6 +18,7 @@ namespace Grocery.App.ViewModels
         
         public ObservableCollection<GroceryListItem> MyGroceryListItems { get; set; } = [];
         public ObservableCollection<Product> AvailableProducts { get; set; } = [];
+        public ObservableCollection<Product> FilteredProducts { get; set; } = [];
 
         [ObservableProperty]
         GroceryList groceryList = new(0, "None", DateOnly.MinValue, "", 0);
@@ -41,10 +42,15 @@ namespace Grocery.App.ViewModels
 
         private void GetAvailableProducts()
         {
-            AvailableProducts.Clear();
-            foreach (Product p in _productService.GetAll())
-                if (MyGroceryListItems.FirstOrDefault(g => g.ProductId == p.Id) == null  && p.Stock > 0)
-                    AvailableProducts.Add(p);
+            var inList = new HashSet<int>(MyGroceryListItems.Select(g => g.ProductId));
+            
+            var available = _productService
+                .GetAll()
+                .Where(p => p.Stock > 0 && !inList.Contains(p.Id))
+                .ToList();
+            
+            ReplaceWith(AvailableProducts, available);
+            ReplaceWith(FilteredProducts, available);
         }
 
         partial void OnGroceryListChanged(GroceryList value)
@@ -67,7 +73,30 @@ namespace Grocery.App.ViewModels
             product.Stock--;
             _productService.Update(product);
             AvailableProducts.Remove(product);
+            FilteredProducts.Remove(product);
+            
             OnGroceryListChanged(GroceryList);
+        }
+        
+        [RelayCommand]
+        public void SearchProducts(string? term)
+        {
+            var query = term?.Trim() ?? string.Empty;
+
+            var result = string.IsNullOrWhiteSpace(query)
+                ? AvailableProducts
+                : AvailableProducts.Where(p =>
+                    p.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
+
+            ReplaceWith(FilteredProducts, result);
+        }
+        
+        
+        private static void ReplaceWith<T>(ObservableCollection<T> target, IEnumerable<T> source)
+        {
+            target.Clear();
+            foreach (var item in source)
+                target.Add(item);
         }
 
         [RelayCommand]
