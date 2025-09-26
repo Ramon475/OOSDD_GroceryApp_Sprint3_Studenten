@@ -20,9 +20,7 @@ namespace Grocery.App.ViewModels
         [ObservableProperty] private string errorMessage = string.Empty;
 
         // Register
-        [ObservableProperty]
-        [NotifyCanExecuteChangedFor(nameof(RegisterCommand))]
-        private string registerName = string.Empty;
+
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(RegisterCommand))]
@@ -31,6 +29,10 @@ namespace Grocery.App.ViewModels
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(RegisterCommand))]
         private string registerPassword = string.Empty;
+        
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(RegisterCommand))]
+        private string registerName = string.Empty;
 
         public LoginViewModel(IAuthService authService, GlobalViewModel global)
         {
@@ -69,9 +71,9 @@ namespace Grocery.App.ViewModels
         private void Register()
         {
             var createdClient = _authService.Register(
-                RegisterName.Trim(),
                 RegisterEmail.Trim(),
-                RegisterPassword
+                RegisterPassword.Trim(),
+                RegisterName.Trim()
             );
 
             if (createdClient != null)
