@@ -10,17 +10,27 @@ namespace Grocery.App.ViewModels
         private readonly IAuthService _authService;
         private readonly GlobalViewModel _global;
 
-        // --- Login ---
+        // Login
+        [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
         [ObservableProperty] private string email = "user3@mail.com";
+        
+        [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
         [ObservableProperty] private string password = "user3";
+        
+        [ObservableProperty] private string errorMessage = string.Empty;
 
-        // --- Feedback ---
-        [ObservableProperty] private string errorMessage;
+        // Register
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(RegisterCommand))]
+        private string registerName = string.Empty;
 
-        // --- Register (met ObservableProperty, levert PascalCase properties op) ---
-        [ObservableProperty] private string registerName = "test";
-        [ObservableProperty] private string registerEmail = "test@mail.com";
-        [ObservableProperty] private string registerPassword = "test";
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(RegisterCommand))]
+        private string registerEmail = string.Empty;
+
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(RegisterCommand))]
+        private string registerPassword = string.Empty;
 
         public LoginViewModel(IAuthService authService, GlobalViewModel global)
         {
@@ -28,10 +38,21 @@ namespace Grocery.App.ViewModels
             _global = global;
         }
 
-        [RelayCommand]
+        // Enable button for login fields
+        private bool CanLogin() =>
+            !string.IsNullOrWhiteSpace(Email) &&
+            !string.IsNullOrWhiteSpace(Password);
+
+        // Enable button for register fields
+        private bool CanRegister() =>
+            !string.IsNullOrWhiteSpace(RegisterName) &&
+            !string.IsNullOrWhiteSpace(RegisterEmail) &&
+            !string.IsNullOrWhiteSpace(RegisterPassword);
+
+        [RelayCommand(CanExecute = nameof(CanLogin))]
         private void Login()
         {
-            Client? authenticatedClient = _authService.Login(Email, Password);
+            var authenticatedClient = _authService.Login(Email.Trim(), Password);
             if (authenticatedClient != null)
             {
                 ErrorMessage = $"Welkom {authenticatedClient.Name}!";
@@ -44,11 +65,15 @@ namespace Grocery.App.ViewModels
             }
         }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanRegister))]
         private void Register()
         {
-            // Gebruik de gegenereerde properties (PascalCase), niet de private velden
-            Client? createdClient = _authService.Register(RegisterName, RegisterEmail, RegisterPassword);
+            var createdClient = _authService.Register(
+                RegisterName.Trim(),
+                RegisterEmail.Trim(),
+                RegisterPassword
+            );
+
             if (createdClient != null)
             {
                 ErrorMessage = $"Account aangemaakt. Welkom {createdClient.Name}!";

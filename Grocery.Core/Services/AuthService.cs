@@ -21,26 +21,31 @@ namespace Grocery.Core.Services
         
         public Client? Register(string email, string password, string name)
         {
-            Client? client = _clientService.Get(email);
+            if (string.IsNullOrWhiteSpace(email) ||
+                string.IsNullOrWhiteSpace(password) ||
+                string.IsNullOrWhiteSpace(name))
+                return null;
 
-            if (client == null)
-            {
-
-                var clients = _clientService.GetAll();
-
-                var newClient = new Client(
-                    id: clients.Count + 1,
-                    name: name,
-                    emailAddress: email,
-                    password: password
-                );
-
-                _clientService.Add(newClient);
-
-                return newClient;
-            }
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            var trimmedName = name.Trim();
             
-            return null;
+            if (_clientService.Get(normalizedEmail) is not null)
+                return null;
+            
+            var hashed = PasswordHelper.HashPassword(password);
+            
+            var all = _clientService.GetAll();
+            var nextId = all.Count == 0 ? 1 : all.Max(c => c.Id) + 1;
+
+            var newClient = new Client(
+                id: nextId,
+                name: trimmedName,
+                emailAddress: normalizedEmail,
+                password: hashed
+            );
+
+            _clientService.Add(newClient);
+            return newClient;
         }
     }
 }
